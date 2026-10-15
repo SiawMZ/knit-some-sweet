@@ -74,7 +74,7 @@ export function Builder({ catalog }: { catalog: Catalog }) {
 
       <section
         // On phones the preview stays pinned at the top while the controls scroll under it.
-        className="sticky top-0 z-10 order-1 flex flex-col rounded-[2rem] border-2 border-ink/10 p-3 shadow-md transition-colors sm:relative sm:shadow-none lg:order-2"
+        className="sticky top-0 z-10 order-1 flex flex-col rounded-[2rem] border-2 border-ink/10 p-2 shadow-md sm:p-3 transition-colors sm:relative sm:shadow-none lg:order-2"
         style={{ backgroundColor: BACKDROPS[backdrop].fill }}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -120,7 +120,7 @@ export function Builder({ catalog }: { catalog: Catalog }) {
           )}
         </div>
         <p className="text-center text-xs text-ink/60">
-          {stems.length} stem{stems.length === 1 ? "" : "s"} · Tap a stem to edit it, drag its head to tilt and stretch
+          {stems.length} stem{stems.length === 1 ? "" : "s"}<span className="hidden sm:inline"> · Tap a stem to edit it, drag its head to tilt and stretch</span>
         </p>
       </section>
 

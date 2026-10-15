@@ -90,7 +90,7 @@ export function BouquetCanvas({
         selectedId={selectedId}
         onStemPointerDown={onStemPointerDown}
         onBackgroundPointerDown={() => select(null)}
-        className="h-[36svh] w-auto sm:h-[52vh] max-w-full select-none lg:h-[min(72vh,44rem)]"
+        className="h-[48svh] w-auto sm:h-[52vh] max-w-full select-none lg:h-[min(72vh,44rem)]"
       />
     </div>
   );

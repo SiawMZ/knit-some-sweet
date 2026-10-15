@@ -16,11 +16,15 @@ const SELLER_WHATSAPP = process.env.NEXT_PUBLIC_SELLER_WHATSAPP ?? "";
 
 const PICTURE_NAME = "my-knitsomesweet-bouquet.png";
 
-/** Picture layout: the brand logo (cut out of the Instagram profile picture) centered at the top, the bouquet framed below it. */
+/**
+ * Picture layout, top to bottom: some breathing room, the bouquet (about 60% of the
+ * height), an empty band kept free for an optional message later, then a small brand
+ * logo (cut out of the Instagram profile picture) centered at the bottom.
+ */
 const PICTURE = { width: 800, height: 1040 };
+const BOUQUET_AREA = { x: 40, y: 96, width: 720, height: 624 };
 const LOGO_SRC = "/brand/logo.png";
-const LOGO = { width: 260, top: 48 };
-const BOUQUET_AREA = { x: 40, y: 300, width: 720, height: 700 };
+const LOGO = { width: 150, bottom: 36 };
 /** Canvas units kept around the bouquet's drawn edges. */
 const BOUQUET_PAD = 10;
 
@@ -47,25 +51,34 @@ function bouquetBox(svg: SVGSVGElement) {
   return left < right ? { left, top, right, bottom } : null;
 }
 
-/** Render the bouquet to a PNG file: the logo on top, the bouquet centered below it. */
+/** Render the bouquet to a PNG file, laid out as described at `PICTURE`. */
 async function renderPng(svg: SVGSVGElement): Promise<File> {
   const backdrop = svg.querySelector("[data-backdrop]")?.getAttribute("fill") ?? "#fff6ea";
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.querySelectorAll("[data-selection]").forEach((el) => el.remove());
+  // A stem added just before Finish may still be popping in (scaled down, faded): draw it at full size.
+  clone.querySelectorAll("[data-pop-in]").forEach((el) => el.removeAttribute("style"));
+
+  // Measure the cleaned-up copy (off screen), so popping-in stems count at full size.
+  const holder = document.createElement("div");
+  holder.style.cssText = "position: fixed; left: -10000px; top: 0; pointer-events: none";
+  holder.append(clone);
+  document.body.append(holder);
   const viewBox = svg.viewBox.baseVal;
-  const box = bouquetBox(svg) ?? {
+  const box = bouquetBox(clone) ?? {
     left: viewBox.x,
     top: viewBox.y,
     right: viewBox.x + viewBox.width,
     bottom: viewBox.y + viewBox.height,
   };
+  holder.remove();
+
   const x = box.left - BOUQUET_PAD;
   const y = box.top - BOUQUET_PAD;
   const w = box.right - box.left + 2 * BOUQUET_PAD;
   const h = box.bottom - box.top + 2 * BOUQUET_PAD;
   const scale = Math.min(BOUQUET_AREA.width / w, BOUQUET_AREA.height / h);
   const drawn = { width: Math.round(w * scale), height: Math.round(h * scale) };
-
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.querySelectorAll("[data-selection]").forEach((el) => el.remove());
   clone.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
   clone.setAttribute("width", String(drawn.width));
   clone.setAttribute("height", String(drawn.height));
@@ -93,7 +106,8 @@ async function renderPng(svg: SVGSVGElement): Promise<File> {
       );
       if (logo) {
         const logoHeight = (LOGO.width * logo.naturalHeight) / logo.naturalWidth;
-        ctx.drawImage(logo, (PICTURE.width - LOGO.width) / 2, LOGO.top, LOGO.width, logoHeight);
+        const logoTop = PICTURE.height - LOGO.bottom - logoHeight;
+        ctx.drawImage(logo, (PICTURE.width - LOGO.width) / 2, logoTop, LOGO.width, logoHeight);
       }
     }
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));

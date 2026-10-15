@@ -27,5 +27,5 @@ export function shade(hex: string, amount: number): string {
   );
 }
 
-/** Cartoon outline color for a fill. */
-export const outlineOf = (hex: string) => shade(hex, -0.38);
+/** Cartoon outline color for a fill: a soft, darker shade of it. */
+export const outlineOf = (hex: string) => shade(hex, -0.22);

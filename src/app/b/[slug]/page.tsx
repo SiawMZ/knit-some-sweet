@@ -45,6 +45,7 @@ async function SharedBouquet({ params }: { params: Promise<{ slug: string }> }) 
             vesselId={bouquet.vesselId}
             vesselColorId={bouquet.vesselColorId}
             className="mx-auto w-full max-w-md"
+            sticker
           />
         </div>
         <div className="space-y-3">

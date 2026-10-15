@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { submitBouquet } from "@/app/actions/bouquets";
+import { STICKER_FILTER_ID } from "@/components/bouquet/BouquetSvg";
 import {
   type Bouquet,
   REMARKS_MAX,
@@ -25,8 +26,8 @@ const PICTURE = { width: 800, height: 1040 };
 const BOUQUET_AREA = { x: 40, y: 96, width: 720, height: 624 };
 const LOGO_SRC = "/brand/logo.png";
 const LOGO = { width: 150, bottom: 36 };
-/** Canvas units kept around the bouquet's drawn edges. */
-const BOUQUET_PAD = 10;
+/** Canvas units kept around the bouquet's drawn edges, room for the sticker edge and its shadow. */
+const BOUQUET_PAD = 16;
 
 async function loadImage(src: string) {
   const img = new Image();
@@ -58,6 +59,7 @@ async function renderPng(svg: SVGSVGElement): Promise<File> {
   clone.querySelectorAll("[data-selection]").forEach((el) => el.remove());
   // A stem added just before Finish may still be popping in (scaled down, faded): draw it at full size.
   clone.querySelectorAll("[data-pop-in]").forEach((el) => el.removeAttribute("style"));
+  clone.querySelector("[data-content]")?.setAttribute("filter", `url(#${STICKER_FILTER_ID})`);
 
   // Measure the cleaned-up copy (off screen), so popping-in stems count at full size.
   const holder = document.createElement("div");

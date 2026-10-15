@@ -40,12 +40,15 @@ export function Stitch({
   );
 }
 
+/** Outlines are drawn thinner than their nominal width, for a gentle hand-made look. */
+const OUTLINE_SCALE = 0.7;
+
 /** Common props for a filled shape with a soft cartoon outline. */
 export function filled(color: string, width = 2) {
   return {
     fill: color,
     stroke: outlineOf(color),
-    strokeWidth: width,
+    strokeWidth: width * OUTLINE_SCALE,
     strokeLinejoin: "round" as const,
   };
 }

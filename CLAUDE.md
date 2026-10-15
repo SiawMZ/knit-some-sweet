@@ -19,7 +19,7 @@ Two sides:
 
 Warm, aesthetic, cartoon-like, matching the brand's Instagram: soft pastels (pinks, creams, butter yellow, sage green), rounded shapes and a hand-made feel. The UI should feel cozy, not like a generic e-commerce site. Brand colors are Tailwind theme tokens in `src/app/globals.css` (`paper`, `ink`, `rose`, `butter`, `sage`, ...). Fonts are Fredoka (`font-display`) and Nunito (`font-sans`).
 
-`image_ref/` holds the seller's product photos (WhatsApp JPEGs). These photos are **source references only** and are not served by the app. Each product is redrawn as a cartoonized crochet **SVG React component** in `src/components/artwork/`:
+`image_ref/` holds the seller's product photos (WhatsApp JPEGs). These photos are **source references only**: they are gitignored (the GitHub repo is public), kept only on the developer's machine and never served by the app. Each product is redrawn as a cartoonized crochet **SVG React component** in `src/components/artwork/`:
 
 - Each artwork takes a single `color` prop (the seller-chosen main color); secondary shades come from `shade()` in `src/lib/color.ts`, and fixed accents (centers, caps, leaves) are constants. Never bake colors into separate files.
 - Anchor convention (documented in `parts.tsx`): stem artwork is drawn with the stem-attachment point at (0, 0), extending upward. Blooms fit in about a 30-unit radius around (0, -28). Fillers (sprigs) carry their own stem up to about y = -100. Vessels are drawn in canvas coordinates (viewBox `0 0 400 520`) as separate `Back` and `Front` layers.

@@ -47,3 +47,6 @@ next-env.d.ts
 
 # drawing-request photos and renders (private, see .claude/skills/draw-requests)
 /drawing-requests
+
+# the seller's product photos (drawing references only, never published)
+/image_ref

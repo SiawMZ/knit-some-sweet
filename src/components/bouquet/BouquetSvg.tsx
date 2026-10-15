@@ -71,6 +71,7 @@ export function BouquetSvg({
         width={CANVAS.width}
         height={CANVAS.height}
         fill={backdrop ?? "transparent"}
+        data-backdrop
         onPointerDown={onBackgroundPointerDown}
       />
       <art.Back color={vesselColor} />
@@ -117,7 +118,7 @@ export function BouquetSvg({
               style={{ originX: 0.5, originY: 1 }}
             >
               {selected && (
-                <circle cx={0} cy={-30} r={38} fill="none" stroke="#c9826b" strokeWidth={1.6} strokeDasharray="4 4" />
+                <circle data-selection cx={0} cy={-30} r={38} fill="none" stroke="#c9826b" strokeWidth={1.6} strokeDasharray="4 4" />
               )}
               <Component color={color} />
             </motion.g>

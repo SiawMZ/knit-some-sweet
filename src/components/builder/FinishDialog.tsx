@@ -16,10 +16,13 @@ const SELLER_WHATSAPP = process.env.NEXT_PUBLIC_SELLER_WHATSAPP ?? "";
 
 const PICTURE_NAME = "my-knitsomesweet-bouquet.png";
 
-/** The brand logo (cut out of the Instagram profile picture), stamped in the picture's corner. */
+/** Picture layout: the brand logo (cut out of the Instagram profile picture) centered at the top, the bouquet framed below it. */
+const PICTURE = { width: 800, height: 1040 };
 const LOGO_SRC = "/brand/logo.png";
-const LOGO_WIDTH = 170;
-const LOGO_MARGIN = 24;
+const LOGO = { width: 260, top: 48 };
+const BOUQUET_AREA = { x: 40, y: 300, width: 720, height: 700 };
+/** Canvas units kept around the bouquet's drawn edges. */
+const BOUQUET_PAD = 10;
 
 async function loadImage(src: string) {
   const img = new Image();
@@ -28,11 +31,44 @@ async function loadImage(src: string) {
   return img;
 }
 
-/** Render the bouquet SVG to a PNG file, with the logo in the bottom-right corner. */
+/** The box the bouquet is drawn in, in canvas units (the backdrop excluded). */
+function bouquetBox(svg: SVGSVGElement) {
+  const toCanvas = svg.getScreenCTM()?.inverse();
+  if (!toCanvas) return null;
+  let [left, top, right, bottom] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const el of Array.from(svg.children)) {
+    if (el.hasAttribute("data-backdrop")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    const a = new DOMPoint(r.left, r.top).matrixTransform(toCanvas);
+    const b = new DOMPoint(r.right, r.bottom).matrixTransform(toCanvas);
+    [left, top, right, bottom] = [Math.min(left, a.x), Math.min(top, a.y), Math.max(right, b.x), Math.max(bottom, b.y)];
+  }
+  return left < right ? { left, top, right, bottom } : null;
+}
+
+/** Render the bouquet to a PNG file: the logo on top, the bouquet centered below it. */
 async function renderPng(svg: SVGSVGElement): Promise<File> {
+  const backdrop = svg.querySelector("[data-backdrop]")?.getAttribute("fill") ?? "#fff6ea";
+  const viewBox = svg.viewBox.baseVal;
+  const box = bouquetBox(svg) ?? {
+    left: viewBox.x,
+    top: viewBox.y,
+    right: viewBox.x + viewBox.width,
+    bottom: viewBox.y + viewBox.height,
+  };
+  const x = box.left - BOUQUET_PAD;
+  const y = box.top - BOUQUET_PAD;
+  const w = box.right - box.left + 2 * BOUQUET_PAD;
+  const h = box.bottom - box.top + 2 * BOUQUET_PAD;
+  const scale = Math.min(BOUQUET_AREA.width / w, BOUQUET_AREA.height / h);
+  const drawn = { width: Math.round(w * scale), height: Math.round(h * scale) };
+
   const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("width", "800");
-  clone.setAttribute("height", "1040");
+  clone.querySelectorAll("[data-selection]").forEach((el) => el.remove());
+  clone.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+  clone.setAttribute("width", String(drawn.width));
+  clone.setAttribute("height", String(drawn.height));
   const data = new XMLSerializer().serializeToString(clone);
   const url = URL.createObjectURL(new Blob([data], { type: "image/svg+xml" }));
   try {
@@ -42,13 +78,23 @@ async function renderPng(svg: SVGSVGElement): Promise<File> {
       loadImage(LOGO_SRC).catch(() => null),
     ]);
     const canvas = document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 1040;
+    canvas.width = PICTURE.width;
+    canvas.height = PICTURE.height;
     const ctx = canvas.getContext("2d");
-    ctx?.drawImage(img, 0, 0, 800, 1040);
-    if (ctx && logo) {
-      const h = (LOGO_WIDTH * logo.naturalHeight) / logo.naturalWidth;
-      ctx.drawImage(logo, 800 - LOGO_MARGIN - LOGO_WIDTH, 1040 - LOGO_MARGIN - h, LOGO_WIDTH, h);
+    if (ctx) {
+      ctx.fillStyle = backdrop;
+      ctx.fillRect(0, 0, PICTURE.width, PICTURE.height);
+      ctx.drawImage(
+        img,
+        BOUQUET_AREA.x + (BOUQUET_AREA.width - drawn.width) / 2,
+        BOUQUET_AREA.y + (BOUQUET_AREA.height - drawn.height) / 2,
+        drawn.width,
+        drawn.height,
+      );
+      if (logo) {
+        const logoHeight = (LOGO.width * logo.naturalHeight) / logo.naturalWidth;
+        ctx.drawImage(logo, (PICTURE.width - LOGO.width) / 2, LOGO.top, LOGO.width, logoHeight);
+      }
     }
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
     if (!blob) throw new Error("Could not render the bouquet picture.");

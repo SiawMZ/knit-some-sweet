@@ -6,10 +6,12 @@ import { PageView } from "@/components/analytics/PageView";
 import { BouquetSvg } from "@/components/bouquet/BouquetSvg";
 import { summarize } from "@/lib/bouquet";
 import { getSavedBouquet } from "@/lib/bouquets/queries";
+import { LINK_PREVIEW } from "@/lib/link-preview";
 
 export const metadata: Metadata = {
   title: "A crochet bouquet · knitsomesweet",
   description: "A handmade crochet bouquet, made with the knitsomesweet bouquet builder.",
+  openGraph: LINK_PREVIEW,
 };
 
 export default function SharedBouquetPage({ params }: PageProps<"/b/[slug]">) {

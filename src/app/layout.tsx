@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import { LINK_PREVIEW } from "@/lib/link-preview";
 import "./globals.css";
 
 const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"] });
@@ -8,6 +9,7 @@ const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Build a bouquet · knitsomesweet",
   description: "Mix and match handmade crochet flowers into your own bouquet.",
+  openGraph: LINK_PREVIEW,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

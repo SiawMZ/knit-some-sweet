@@ -13,8 +13,10 @@ import { useBuilder } from "@/lib/store";
 
 const SELLER_WHATSAPP = process.env.NEXT_PUBLIC_SELLER_WHATSAPP ?? "";
 
-/** Render the bouquet SVG to a PNG and trigger a download. */
-async function downloadPng(svg: SVGSVGElement) {
+const PICTURE_NAME = "my-knitsomesweet-bouquet.png";
+
+/** Render the bouquet SVG to a PNG file. */
+async function renderPng(svg: SVGSVGElement): Promise<File> {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("width", "800");
   clone.setAttribute("height", "1040");
@@ -28,13 +30,34 @@ async function downloadPng(svg: SVGSVGElement) {
     canvas.width = 800;
     canvas.height = 1040;
     canvas.getContext("2d")?.drawImage(img, 0, 0, 800, 1040);
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = "my-knitsomesweet-bouquet.png";
-    a.click();
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
+    if (!blob) throw new Error("Could not render the bouquet picture.");
+    return new File([blob], PICTURE_NAME, { type: "image/png" });
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+function saveFile(file: File) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * WhatsApp links can only carry text. On phones the system share sheet can
+ * send the picture and text together; elsewhere we save the picture and open
+ * the WhatsApp link so the customer can attach it.
+ */
+function canShareToApps(file: File) {
+  return (
+    window.matchMedia("(pointer: coarse)").matches &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] })
+  );
 }
 
 export function FinishDialog({
@@ -57,6 +80,9 @@ export function FinishDialog({
   const [copied, setCopied] = useState(false);
   const setOrderNotes = useBuilder((s) => s.setOrderNotes);
 
+  const [picture, setPicture] = useState<File | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -64,10 +90,43 @@ export function FinishDialog({
     if (!open && d.open) d.close();
   }, [open]);
 
+  // Render the picture as soon as the dialog opens, so sharing it can happen
+  // synchronously inside the click (browsers require a fresh user gesture).
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!open || !svg) return;
+    let cancelled = false;
+    renderPng(svg).then(
+      (file) => !cancelled && setPicture(file),
+      () => !cancelled && setPicture(null),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [open, svgRef]);
+
   const errors = validateBouquet(bouquet, catalog, today);
   const lines = summarize(bouquet.stems, catalog);
   const message = orderMessage(bouquet, catalog);
   const waUrl = `https://wa.me/${SELLER_WHATSAPP}?text=${encodeURIComponent(message)}`;
+
+  const sendOnWhatsApp = async () => {
+    setNote(null);
+    if (picture && canShareToApps(picture)) {
+      try {
+        await navigator.share({ files: [picture], text: message });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        // Sharing failed for another reason: fall back to save + link.
+      }
+    }
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+    if (picture) {
+      saveFile(picture);
+      setNote("We saved your bouquet picture. Attach it in WhatsApp before you press send ✿");
+    }
+  };
 
   return (
     <dialog
@@ -123,9 +182,19 @@ export function FinishDialog({
               </label>
             </div>
             <div className="mt-5 grid gap-2">
-              <a href={waUrl} target="_blank" rel="noreferrer" className="btn-primary text-center">
+              <button
+                type="button"
+                onClick={sendOnWhatsApp}
+                disabled={!picture}
+                className="btn-primary disabled:opacity-60"
+              >
                 {SELLER_WHATSAPP ? "Send to knitsomesweet on WhatsApp" : "Share on WhatsApp"}
-              </a>
+              </button>
+              {note && (
+                <p role="status" className="rounded-2xl bg-butter/30 px-3 py-2 text-sm">
+                  {note}
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -141,7 +210,8 @@ export function FinishDialog({
                 <button
                   type="button"
                   className="btn-soft"
-                  onClick={() => svgRef.current && downloadPng(svgRef.current)}
+                  onClick={() => picture && saveFile(picture)}
+                  disabled={!picture}
                 >
                   Save picture
                 </button>

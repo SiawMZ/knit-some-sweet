@@ -16,7 +16,19 @@ const SELLER_WHATSAPP = process.env.NEXT_PUBLIC_SELLER_WHATSAPP ?? "";
 
 const PICTURE_NAME = "my-knitsomesweet-bouquet.png";
 
-/** Render the bouquet SVG to a PNG file. */
+/** The brand logo (cut out of the Instagram profile picture), stamped in the picture's corner. */
+const LOGO_SRC = "/brand/logo.png";
+const LOGO_WIDTH = 170;
+const LOGO_MARGIN = 24;
+
+async function loadImage(src: string) {
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  return img;
+}
+
+/** Render the bouquet SVG to a PNG file, with the logo in the bottom-right corner. */
 async function renderPng(svg: SVGSVGElement): Promise<File> {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("width", "800");
@@ -24,13 +36,20 @@ async function renderPng(svg: SVGSVGElement): Promise<File> {
   const data = new XMLSerializer().serializeToString(clone);
   const url = URL.createObjectURL(new Blob([data], { type: "image/svg+xml" }));
   try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
+    const [img, logo] = await Promise.all([
+      loadImage(url),
+      // A missing logo shouldn't stop the customer from getting their picture.
+      loadImage(LOGO_SRC).catch(() => null),
+    ]);
     const canvas = document.createElement("canvas");
     canvas.width = 800;
     canvas.height = 1040;
-    canvas.getContext("2d")?.drawImage(img, 0, 0, 800, 1040);
+    const ctx = canvas.getContext("2d");
+    ctx?.drawImage(img, 0, 0, 800, 1040);
+    if (ctx && logo) {
+      const h = (LOGO_WIDTH * logo.naturalHeight) / logo.naturalWidth;
+      ctx.drawImage(logo, 800 - LOGO_MARGIN - LOGO_WIDTH, 1040 - LOGO_MARGIN - h, LOGO_WIDTH, h);
+    }
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
     if (!blob) throw new Error("Could not render the bouquet picture.");
     return new File([blob], PICTURE_NAME, { type: "image/png" });

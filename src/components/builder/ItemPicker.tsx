@@ -44,14 +44,14 @@ export function ItemPicker({ items }: { items: CatalogItem[] }) {
       </div>
       <p className="mt-3 text-sm text-ink/70">{TABS.find((t) => t.id === tab)?.hint}</p>
 
-      <ul className="mt-3 grid grid-cols-2 gap-3">
+      <ul className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
         {visible.map((item) => {
           const count = countOf(stems, item.id);
           const addable = canAdd(stems, item);
           return (
             <li
               key={item.id}
-              className={`relative rounded-3xl border-2 bg-white/70 p-2 transition ${
+              className={`relative rounded-3xl border-2 bg-white/70 p-1.5 transition sm:p-2 ${
                 count > 0 ? "border-rose" : "border-ink/10"
               }`}
             >
@@ -62,10 +62,10 @@ export function ItemPicker({ items }: { items: CatalogItem[] }) {
                 aria-label={`Add ${item.name}`}
                 className="block w-full rounded-2xl disabled:opacity-50"
               >
-                <ArtworkThumb artworkKey={item.artworkKey} color={item.colors[0].hex} className="mx-auto h-24 w-24" />
-                <span className="mt-1 block text-center font-display text-ink">{item.name}</span>
+                <ArtworkThumb artworkKey={item.artworkKey} color={item.colors[0].hex} className="mx-auto size-16 sm:size-24" />
+                <span className="mt-1 block text-center font-display text-sm text-ink sm:text-base">{item.name}</span>
               </button>
-              <div className="mt-1 flex items-center justify-center gap-2 text-sm">
+              <div className="mt-0.5 flex items-center justify-center gap-2 text-sm sm:mt-1">
                 <button
                   type="button"
                   onClick={() => removeLastOf(item.id)}

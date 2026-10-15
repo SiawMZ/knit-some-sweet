@@ -1,12 +1,15 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { signOut } from "@/auth";
 import { firstError, parseColorForm, parseItemForm, parseVesselForm } from "@/lib/catalog/admin";
 import { checkPhoto, drawingRequestSchema } from "@/lib/drawings";
 import { CATALOG_TAG } from "@/lib/catalog/queries";
 import { db } from "@/lib/server/db";
+import { notifyDrawingRequest } from "@/lib/server/notify";
 import { requireSeller } from "@/lib/server/session";
 
 /** What a form action reports back; `ok` with a message on success, otherwise an error. */
@@ -159,6 +162,15 @@ export async function requestDrawing(_prev: FormState, fd: FormData): Promise<Fo
       photo: new Uint8Array(await photo.arrayBuffer()),
       photoType: photo.type,
     },
+  });
+  const { name, kind } = parsed.data;
+  // Tell the developer once the seller has their answer; this never fails the request.
+  after(async () => {
+    const h = await headers();
+    const first = (header: string) => h.get(header)?.split(",")[0].trim();
+    const host = first("x-forwarded-host") ?? first("host") ?? "localhost:3000";
+    const proto = first("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    await notifyDrawingRequest({ name, kind, adminUrl: `${proto}://${host}/admin/requests` });
   });
   refresh();
   return { message: `Sent! We'll draw your ${parsed.data.name} soon ✿` };

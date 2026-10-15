@@ -9,6 +9,13 @@ The seller uploads photos of new products at `/admin/requests`. Each one needs a
 artwork component in the same hand-made cartoon style as the existing ones, so it can be
 recolored with any allowed color. You draw them here; they reach the site with the next deploy.
 
+## Getting notified
+
+If the deployed site has `DRAWING_REQUEST_WEBHOOK_URL` set, the developer gets a message
+(ntfy, Discord, Slack or plain JSON; see `.env.example`) each time the seller sends a
+request, with the item's name and kind and a link to `/admin/requests`. The photo and the
+seller's notes are only in the database, so run the export below to see them.
+
 ## 1. Fetch the queue
 
 ```bash

@@ -1,6 +1,6 @@
 "use client";
 
-import { type PointerEvent, useRef } from "react";
+import { type PointerEvent, useEffect, useRef } from "react";
 import { vesselArtworks } from "@/components/artwork/registry";
 import { BouquetSvg, PX_PER_CM } from "@/components/bouquet/BouquetSvg";
 import type { Stem } from "@/lib/bouquet";
@@ -27,6 +27,18 @@ export function BouquetCanvas({
   const select = useBuilder((s) => s.select);
   const updateStem = useBuilder((s) => s.updateStem);
   const drag = useRef<{ stem: Stem; pointerId: number } | null>(null);
+
+  // Mobile browsers start scrolling from the touch itself and ignore `touch-action` on SVG
+  // children, so cancel touches that start on a stem. Touches on the background still scroll.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.target instanceof Element && e.target.closest("[data-stem-id]")) e.preventDefault();
+    };
+    svg.addEventListener("touchstart", onTouchStart, { passive: false });
+    return () => svg.removeEventListener("touchstart", onTouchStart);
+  }, [svgRef]);
 
   const vessel = catalog.vessels.find((v) => v.id === vesselId) ?? catalog.vessels[0];
   const gather = vesselArtworks[vessel.artworkKey].gather;
@@ -78,7 +90,7 @@ export function BouquetCanvas({
         selectedId={selectedId}
         onStemPointerDown={onStemPointerDown}
         onBackgroundPointerDown={() => select(null)}
-        className="h-[52vh] w-auto max-w-full select-none lg:h-[min(72vh,44rem)]"
+        className="h-[36svh] w-auto sm:h-[52vh] max-w-full select-none lg:h-[min(72vh,44rem)]"
       />
     </div>
   );

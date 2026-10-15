@@ -73,7 +73,8 @@ export function Builder({ catalog }: { catalog: Catalog }) {
       </aside>
 
       <section
-        className="relative order-1 flex flex-col rounded-[2rem] border-2 border-ink/10 p-3 transition-colors lg:order-2"
+        // On phones the preview stays pinned at the top while the controls scroll under it.
+        className="sticky top-0 z-10 order-1 flex flex-col rounded-[2rem] border-2 border-ink/10 p-3 shadow-md transition-colors sm:relative sm:shadow-none lg:order-2"
         style={{ backgroundColor: BACKDROPS[backdrop].fill }}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">

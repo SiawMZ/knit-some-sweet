@@ -9,8 +9,10 @@ import {
   canAdd,
   clamp,
   placementFor,
+  reconcileStems,
+  reconcileVessel,
 } from "./bouquet";
-import type { CatalogItem, Vessel } from "./catalog/types";
+import type { Catalog, CatalogItem, Vessel } from "./catalog/types";
 
 export type Backdrop = "cream" | "blush" | "sage";
 
@@ -35,6 +37,8 @@ interface BuilderState {
   setVesselColor: (colorId: string) => void;
   setBackdrop: (b: Backdrop) => void;
   setOrderNotes: (notes: { neededBy?: string; remarks?: string }) => void;
+  /** Fits the stems and vessel to the current catalog (after a restore or a catalog change). */
+  reconcile: (catalog: Catalog) => void;
   reset: () => void;
 }
 
@@ -126,6 +130,24 @@ export const useBuilder = create<BuilderState>()(
       setBackdrop: (backdrop) => set({ backdrop }),
 
       setOrderNotes: (notes) => set(notes),
+
+      reconcile: (catalog) => {
+        const { stems, selectedId, vesselId, vesselColorId } = get();
+        const next = reconcileStems(stems, catalog);
+        const vessel = reconcileVessel(vesselId, vesselColorId, catalog);
+        const unchanged =
+          next.length === stems.length &&
+          next.every((s, i) => s === stems[i]) &&
+          vessel?.vessel.id === vesselId &&
+          vessel?.colorId === vesselColorId;
+        if (unchanged) return;
+        set({
+          stems: next,
+          selectedId: next.some((s) => s.id === selectedId) ? selectedId : null,
+          vesselId: vessel?.vessel.id ?? null,
+          vesselColorId: vessel?.colorId ?? null,
+        });
+      },
 
       reset: () => set({ stems: [], selectedId: null }),
     }),

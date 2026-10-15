@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArtworkThumb } from "@/components/artwork/ArtworkThumb";
+import { track } from "@/lib/analytics/client";
 import { canAdd, countOf } from "@/lib/bouquet";
 import type { CatalogItem, ItemCategory } from "@/lib/catalog/types";
 import { useBuilder } from "@/lib/store";
@@ -18,6 +19,9 @@ export function ItemPicker({ items }: { items: CatalogItem[] }) {
   const addStem = useBuilder((s) => s.addStem);
   const removeLastOf = useBuilder((s) => s.removeLastOf);
   const visible = items.filter((i) => i.category === tab && i.active);
+  const add = (item: CatalogItem) => {
+    if (addStem(item)) track({ type: "item_added", itemId: item.id, colorId: item.colors[0].id });
+  };
 
   return (
     <div>
@@ -53,7 +57,7 @@ export function ItemPicker({ items }: { items: CatalogItem[] }) {
             >
               <button
                 type="button"
-                onClick={() => addStem(item)}
+                onClick={() => add(item)}
                 disabled={!addable}
                 aria-label={`Add ${item.name}`}
                 className="block w-full rounded-2xl disabled:opacity-50"
@@ -76,7 +80,7 @@ export function ItemPicker({ items }: { items: CatalogItem[] }) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => addStem(item)}
+                  onClick={() => add(item)}
                   disabled={!addable}
                   aria-label={`Add one ${item.name}`}
                   className="size-7 rounded-full border-2 border-ink/20 leading-none text-ink disabled:opacity-30"

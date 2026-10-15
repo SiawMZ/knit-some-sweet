@@ -2,8 +2,8 @@ import type { Catalog, ColorOption } from "./types";
 
 /**
  * Starting catalog, based on the photos in image_ref/.
- * Until the database and seller admin exist, the builder reads this directly;
- * afterwards it becomes the Prisma seed.
+ * Used by the Prisma seed (prisma/seed.ts) and as a fixture in tests; the
+ * builder itself reads the catalog from the database.
  */
 
 const c = (id: string, name: string, hex: string): ColorOption => ({ id, name, hex });

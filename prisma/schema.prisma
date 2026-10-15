@@ -1,0 +1,141 @@
+// Catalog, saved bouquets and first-party analytics for knitsomesweet.
+// Artwork is code (src/components/artwork/registry.ts); rows only reference it by `artworkKey`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ItemCategory {
+  bloom
+  filler
+  friend
+}
+
+enum VesselKind {
+  vase
+  wrap
+}
+
+/// A yarn color the seller can offer on items and vessels.
+model Color {
+  /// Stable slug, referenced by stems in saved bouquets and analytics.
+  id      String        @id
+  name    String
+  hex     String
+  items   ItemColor[]
+  vessels VesselColor[]
+}
+
+model Item {
+  id            String       @id
+  name          String
+  category      ItemCategory
+  artworkKey    String
+  /// Most stems of this item a single bouquet may contain.
+  maxQuantity   Int
+  /// Default stem height in cm.
+  defaultHeight Int
+  active        Boolean      @default(true)
+  /// Display order in the builder.
+  position      Int          @default(0)
+  colors        ItemColor[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+/// An allowed color for an item. The lowest `position` is the default color.
+model ItemColor {
+  itemId   String
+  colorId  String
+  position Int
+  item     Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  color    Color  @relation(fields: [colorId], references: [id], onDelete: Restrict)
+
+  @@id([itemId, colorId])
+}
+
+model Vessel {
+  id         String        @id
+  name       String
+  kind       VesselKind
+  artworkKey String
+  active     Boolean       @default(true)
+  position   Int           @default(0)
+  colors     VesselColor[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model VesselColor {
+  vesselId String
+  colorId  String
+  position Int
+  vessel   Vessel @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  color    Color  @relation(fields: [colorId], references: [id], onDelete: Restrict)
+
+  @@id([vesselId, colorId])
+}
+
+/// A submitted bouquet, stored as a snapshot so its share link keeps
+/// rendering after the catalog changes.
+model SavedBouquet {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  /// The validated `Bouquet` (stems, vessel, neededBy, remarks).
+  bouquet   Json
+  /// The part of the catalog the bouquet uses, as it was when submitted.
+  catalog   Json
+  stemCount Int
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+enum EventType {
+  page_view
+  item_added
+  bouquet_submitted
+}
+
+/// First-party analytics. Never store customer PII here (no IPs, user agents, names or remarks).
+model AnalyticsEvent {
+  id        String    @id @default(cuid())
+  type      EventType
+  path      String?
+  itemId    String?
+  colorId   String?
+  createdAt DateTime  @default(now())
+
+  @@index([type, createdAt])
+}
+
+enum DrawingStatus {
+  waiting
+  drawn
+  dismissed
+}
+
+/// A seller's photo of a new product, waiting to be redrawn as cartoon SVG artwork.
+/// Processed by the developer with the `/draw-requests` Claude Code command (.claude/skills).
+model DrawingRequest {
+  id         String        @id @default(cuid())
+  name       String
+  /// bloom | filler | friend | vase | wrap
+  kind       String
+  notes      String?
+  /// The photo, downscaled in the browser to a JPEG. Private: only the seller and the developer see it.
+  photo      Bytes
+  photoType  String
+  status     DrawingStatus @default(waiting)
+  /// The registry key of the finished drawing.
+  artworkKey String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}

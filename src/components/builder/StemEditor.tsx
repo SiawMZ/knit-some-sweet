@@ -1,6 +1,7 @@
 "use client";
 
 import { ArtworkThumb } from "@/components/artwork/ArtworkThumb";
+import { track } from "@/lib/analytics/client";
 import { ANGLE_RANGE, HEIGHT_RANGE, canAdd } from "@/lib/bouquet";
 import type { CatalogItem } from "@/lib/catalog/types";
 import { useBuilder } from "@/lib/store";
@@ -102,7 +103,9 @@ export function StemEditor({ items }: { items: CatalogItem[] }) {
         </button>
         <button
           type="button"
-          onClick={() => duplicateStem(stem.id, item)}
+          onClick={() => {
+            if (duplicateStem(stem.id, item)) track({ type: "item_added", itemId: item.id, colorId: stem.colorId });
+          }}
           disabled={!canAdd(stems, item)}
           className="btn-soft"
         >

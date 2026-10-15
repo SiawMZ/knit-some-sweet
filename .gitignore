@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated Prisma client
+/src/generated
+
+!.env.example
+
+# drawing-request photos and renders (private, see .claude/skills/draw-requests)
+/drawing-requests

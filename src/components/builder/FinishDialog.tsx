@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { submitBouquet } from "@/app/actions/bouquets";
 import {
   type Bouquet,
   REMARKS_MAX,
@@ -77,11 +78,15 @@ export function FinishDialog({
   svgRef: React.RefObject<SVGSVGElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"text" | "link" | null>(null);
   const setOrderNotes = useBuilder((s) => s.setOrderNotes);
 
   const [picture, setPicture] = useState<File | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  /** The saved bouquet's slug, once the server has accepted it. */
+  const [slug, setSlug] = useState<string | null>(null);
+  const [serverErrors, setServerErrors] = useState<string[]>([]);
+  const [saving, startSaving] = useTransition();
 
   useEffect(() => {
     const d = ref.current;
@@ -105,10 +110,37 @@ export function FinishDialog({
     };
   }, [open, svgRef]);
 
+  const close = () => {
+    setSlug(null);
+    setServerErrors([]);
+    setNote(null);
+    onClose();
+  };
+
   const errors = validateBouquet(bouquet, catalog, today);
   const lines = summarize(bouquet.stems, catalog);
-  const message = orderMessage(bouquet, catalog);
+  const link = slug ? `${window.location.origin}/b/${slug}` : undefined;
+  const message = orderMessage(bouquet, catalog, link);
   const waUrl = `https://wa.me/${SELLER_WHATSAPP}?text=${encodeURIComponent(message)}`;
+
+  // The server re-validates against the live catalog and saves a snapshot with a share link.
+  const save = () =>
+    startSaving(async () => {
+      setServerErrors([]);
+      try {
+        const result = await submitBouquet(bouquet, today);
+        if (result.ok) setSlug(result.slug);
+        else setServerErrors(result.errors);
+      } catch {
+        setServerErrors(["We couldn't save your bouquet just now. Please try again."]);
+      }
+    });
+
+  const copy = async (what: "text" | "link") => {
+    await navigator.clipboard.writeText(what === "text" ? message : (link ?? ""));
+    setCopied(what);
+    setTimeout(() => setCopied(null), 1800);
+  };
 
   const sendOnWhatsApp = async () => {
     setNote(null);
@@ -128,21 +160,24 @@ export function FinishDialog({
     }
   };
 
+  const shownErrors = errors.length > 0 ? errors : serverErrors;
+
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={close}
       className="m-auto w-[min(92vw,30rem)] rounded-[2rem] border-2 border-ink/10 bg-paper p-0 text-ink backdrop:bg-ink/30"
     >
       <div className="p-6">
         <h2 className="font-display text-3xl">Your bouquet 💐</h2>
-        {errors.length > 0 ? (
-          <ul className="mt-4 space-y-1 rounded-2xl bg-rose/15 p-4 text-sm">
-            {errors.map((e) => (
+        {shownErrors.length > 0 && (
+          <ul role="alert" className="mt-4 space-y-1 rounded-2xl bg-rose/15 p-4 text-sm">
+            {shownErrors.map((e) => (
               <li key={e}>{e}</li>
             ))}
           </ul>
-        ) : (
+        )}
+        {errors.length === 0 && (
           <>
             <ul className="mt-4 divide-y divide-ink/10 rounded-2xl bg-white/70 px-4">
               {lines.map((l) => (
@@ -154,72 +189,93 @@ export function FinishDialog({
                 </li>
               ))}
             </ul>
-            <div className="mt-5 space-y-3">
-              <label className="block">
-                <span className="font-display">
-                  Needed by <span className="text-sm text-ink/60">(optional)</span>
-                </span>
-                <input
-                  type="date"
-                  min={today}
-                  value={bouquet.neededBy ?? ""}
-                  onChange={(e) => setOrderNotes({ neededBy: e.target.value })}
-                  className="mt-1 block w-full rounded-2xl border-2 border-ink/15 bg-white/80 px-3 py-2"
-                />
-              </label>
-              <label className="block">
-                <span className="font-display">
-                  Remarks <span className="text-sm text-ink/60">(optional)</span>
-                </span>
-                <textarea
-                  rows={3}
-                  maxLength={REMARKS_MAX}
-                  value={bouquet.remarks ?? ""}
-                  onChange={(e) => setOrderNotes({ remarks: e.target.value })}
-                  placeholder="A card message, a pickup time, anything we should know ✿"
-                  className="mt-1 block w-full resize-none rounded-2xl border-2 border-ink/15 bg-white/80 px-3 py-2"
-                />
-              </label>
-            </div>
-            <div className="mt-5 grid gap-2">
-              <button
-                type="button"
-                onClick={sendOnWhatsApp}
-                disabled={!picture}
-                className="btn-primary disabled:opacity-60"
-              >
-                {SELLER_WHATSAPP ? "Send to knitsomesweet on WhatsApp" : "Share on WhatsApp"}
-              </button>
-              {note && (
-                <p role="status" className="rounded-2xl bg-butter/30 px-3 py-2 text-sm">
-                  {note}
-                </p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
+            {slug === null ? (
+              <>
+                <div className="mt-5 space-y-3">
+                  <label className="block">
+                    <span className="font-display">
+                      Needed by <span className="text-sm text-ink/60">(optional)</span>
+                    </span>
+                    <input
+                      type="date"
+                      min={today}
+                      value={bouquet.neededBy ?? ""}
+                      onChange={(e) => setOrderNotes({ neededBy: e.target.value })}
+                      className="mt-1 block w-full rounded-2xl border-2 border-ink/15 bg-white/80 px-3 py-2"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="font-display">
+                      Remarks <span className="text-sm text-ink/60">(optional)</span>
+                    </span>
+                    <textarea
+                      rows={3}
+                      maxLength={REMARKS_MAX}
+                      value={bouquet.remarks ?? ""}
+                      onChange={(e) => setOrderNotes({ remarks: e.target.value })}
+                      placeholder="A card message, a pickup time, anything we should know ✿"
+                      className="mt-1 block w-full resize-none rounded-2xl border-2 border-ink/15 bg-white/80 px-3 py-2"
+                    />
+                  </label>
+                </div>
                 <button
                   type="button"
-                  className="btn-soft"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(message);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1800);
-                  }}
+                  onClick={save}
+                  disabled={saving}
+                  className="btn-primary mt-5 w-full disabled:opacity-60"
                 >
-                  {copied ? "Copied!" : "Copy order text"}
+                  {saving ? "Saving your bouquet…" : "Looks perfect, continue ✿"}
                 </button>
+              </>
+            ) : (
+              <div className="mt-5 grid gap-2">
+                <p className="rounded-2xl bg-sage/30 px-3 py-2 text-sm">
+                  Saved! Your bouquet has its own page:{" "}
+                  <a href={link} target="_blank" rel="noreferrer" className="font-semibold break-all underline">
+                    {link}
+                  </a>
+                </p>
                 <button
                   type="button"
-                  className="btn-soft"
-                  onClick={() => picture && saveFile(picture)}
+                  onClick={sendOnWhatsApp}
                   disabled={!picture}
+                  className="btn-primary disabled:opacity-60"
                 >
-                  Save picture
+                  {SELLER_WHATSAPP ? "Send to knitsomesweet on WhatsApp" : "Share on WhatsApp"}
+                </button>
+                {note && (
+                  <p role="status" className="rounded-2xl bg-butter/30 px-3 py-2 text-sm">
+                    {note}
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  <button type="button" className="btn-soft px-2" onClick={() => copy("link")}>
+                    {copied === "link" ? "Copied!" : "Copy link"}
+                  </button>
+                  <button type="button" className="btn-soft px-2" onClick={() => copy("text")}>
+                    {copied === "text" ? "Copied!" : "Copy text"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-soft px-2"
+                    onClick={() => picture && saveFile(picture)}
+                    disabled={!picture}
+                  >
+                    Save picture
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSlug(null)}
+                  className="text-sm text-ink/70 underline underline-offset-4"
+                >
+                  Change the date or remarks
                 </button>
               </div>
-            </div>
+            )}
           </>
         )}
-        <button type="button" onClick={onClose} className="mt-4 w-full text-sm text-ink/70 underline underline-offset-4">
+        <button type="button" onClick={close} className="mt-4 w-full text-sm text-ink/70 underline underline-offset-4">
           Keep arranging
         </button>
       </div>

@@ -29,6 +29,12 @@ body {
   .btn-primary {
     @apply rounded-full border-2 border-ink bg-rose px-5 py-2 font-display text-white shadow-[0_3px_0_var(--color-ink)] transition active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-ink)];
   }
+  .field {
+    @apply block w-full rounded-2xl border-2 border-ink/15 bg-white/80 px-3 py-2 text-ink focus:border-rose focus:outline-none;
+  }
+  .card {
+    @apply rounded-[2rem] border-2 border-ink/10 bg-white/70 p-4;
+  }
   .btn-soft {
     @apply rounded-full border-2 border-ink/20 bg-white/80 px-4 py-2 font-display text-sm text-ink transition hover:border-ink/40 disabled:opacity-40;
   }

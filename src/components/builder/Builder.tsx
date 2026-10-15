@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { localDate } from "@/lib/bouquet";
+import { localDate, reconcileVessel } from "@/lib/bouquet";
 import type { Catalog } from "@/lib/catalog/types";
 import { type Backdrop, useBuilder } from "@/lib/store";
 import { BACKDROPS, BouquetCanvas } from "./BouquetCanvas";
@@ -25,17 +25,29 @@ export function Builder({ catalog }: { catalog: Catalog }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const { stems, vesselId, vesselColorId, backdrop, neededBy, remarks } = useBuilder();
   const setBackdrop = useBuilder((s) => s.setBackdrop);
-  const setVessel = useBuilder((s) => s.setVessel);
+  const reconcile = useBuilder((s) => s.reconcile);
   const reset = useBuilder((s) => s.reset);
 
+  // Restore the saved bouquet, then fit it to the catalog, which the seller may have changed since.
   useEffect(() => {
-    void useBuilder.persist.rehydrate();
-  }, []);
+    let cancelled = false;
+    void Promise.resolve(useBuilder.persist.rehydrate()).then(() => {
+      if (!cancelled) reconcile(catalog);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [catalog, reconcile]);
 
-  const vessel = catalog.vessels.find((v) => v.id === vesselId && v.active) ?? catalog.vessels.find((v) => v.active)!;
-  useEffect(() => {
-    if (vessel.id !== vesselId) setVessel(vessel);
-  }, [vessel, vesselId, setVessel]);
+  const current = reconcileVessel(vesselId, vesselColorId, catalog);
+  if (!current) {
+    return (
+      <p className="mx-auto mt-12 max-w-sm rounded-[2rem] bg-paper-deep/60 p-6 text-center font-display text-lg">
+        The shop is restocking its vases and wraps. Please check back soon ✿
+      </p>
+    );
+  }
+  const vessel = current.vessel;
 
   return (
     <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 px-4 pb-8 lg:grid-cols-[22rem_1fr]">
@@ -118,7 +130,7 @@ export function Builder({ catalog }: { catalog: Catalog }) {
         bouquet={{
           stems,
           vesselId: vessel.id,
-          vesselColorId: vesselColorId ?? vessel.colors[0].id,
+          vesselColorId: current.colorId,
           neededBy: neededBy || undefined,
           remarks: remarks || undefined,
         }}

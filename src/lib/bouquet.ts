@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Catalog, CatalogItem } from "./catalog/types";
+import type { Catalog, CatalogItem, Vessel } from "./catalog/types";
 
 export const HEIGHT_RANGE = { min: 15, max: 45 } as const;
 export const ANGLE_RANGE = { min: -60, max: 60 } as const;
@@ -148,7 +148,8 @@ export function validateBouquet(
   return errors;
 }
 
-export function orderMessage(bouquet: Bouquet, catalog: Catalog) {
+/** The order text for the seller; `link` is the saved bouquet's share page. */
+export function orderMessage(bouquet: Bouquet, catalog: Catalog, link?: string) {
   const vessel = catalog.vessels.find((v) => v.id === bouquet.vesselId);
   const vesselColor = vessel?.colors.find((c) => c.id === bouquet.vesselColorId);
   const lines = summarize(bouquet.stems, catalog).map(
@@ -163,5 +164,40 @@ export function orderMessage(bouquet: Bouquet, catalog: Catalog) {
     `Total stems: ${bouquet.stems.length}`,
     ...(bouquet.neededBy ? [`Needed by: ${formatDate(bouquet.neededBy)}`] : []),
     ...(bouquet.remarks?.trim() ? ["", `Remarks: ${bouquet.remarks.trim()}`] : []),
+    ...(link ? ["", `See it here: ${link}`] : []),
   ].join("\n");
+}
+
+/**
+ * Bring a saved bouquet in line with the current catalog: drop stems of items
+ * that are gone or inactive, reset colors that are no longer offered, and trim
+ * items over their new limit (keeping the earliest stems). The seller can
+ * change the catalog between visits, and the builder restores stems from
+ * localStorage.
+ */
+export function reconcileStems(stems: Stem[], catalog: Catalog): Stem[] {
+  const counts = new Map<string, number>();
+  const out: Stem[] = [];
+  for (const s of stems) {
+    const item = catalog.items.find((i) => i.id === s.itemId && i.active);
+    if (!item || item.colors.length === 0) continue;
+    const n = (counts.get(item.id) ?? 0) + 1;
+    if (n > item.maxQuantity || out.length >= MAX_STEMS) continue;
+    counts.set(item.id, n);
+    out.push(item.colors.some((c) => c.id === s.colorId) ? s : { ...s, colorId: item.colors[0].id });
+  }
+  return out;
+}
+
+/** The active vessel and color to use, falling back to the first active vessel. */
+export function reconcileVessel(
+  vesselId: string | null,
+  vesselColorId: string | null,
+  catalog: Catalog,
+): { vessel: Vessel; colorId: string } | null {
+  const usable = catalog.vessels.filter((v) => v.active && v.colors.length > 0);
+  const vessel = usable.find((v) => v.id === vesselId) ?? usable[0];
+  if (!vessel) return null;
+  const colorId = vessel.colors.some((c) => c.id === vesselColorId) ? vesselColorId! : vessel.colors[0].id;
+  return { vessel, colorId };
 }

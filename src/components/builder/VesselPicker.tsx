@@ -5,10 +5,18 @@ import type { Vessel } from "@/lib/catalog/types";
 import { useBuilder } from "@/lib/store";
 import { Swatches } from "./Swatches";
 
-function VesselThumb({ vessel, color }: { vessel: Vessel; color: string }) {
-  const { Back, Front } = vesselArtworks[vessel.artworkKey];
+export function VesselThumb({
+  artworkKey,
+  color,
+  className = "mx-auto h-24 w-20",
+}: {
+  artworkKey: Vessel["artworkKey"];
+  color: string;
+  className?: string;
+}) {
+  const { Back, Front } = vesselArtworks[artworkKey];
   return (
-    <svg viewBox="100 220 200 300" className="mx-auto h-24 w-20" aria-hidden>
+    <svg viewBox="100 220 200 300" className={className} aria-hidden>
       <Back color={color} />
       <Front color={color} />
     </svg>
@@ -38,7 +46,7 @@ export function VesselPicker({ vessels }: { vessels: Vessel[] }) {
                   selected ? "border-rose" : "border-ink/10 hover:border-ink/30"
                 }`}
               >
-                <VesselThumb vessel={v} color={v.colors[0].hex} />
+                <VesselThumb artworkKey={v.artworkKey} color={v.colors[0].hex} />
                 <span className="mt-1 block font-display text-sm leading-tight text-ink">{v.name}</span>
               </button>
             </li>

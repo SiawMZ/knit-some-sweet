@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-paper: #fff8ef;
+  --color-paper-deep: #fbe9d7;
+  --color-ink: #5a4434;
+  --color-rose: #e58ba0;
+  --color-rose-deep: #c4566f;
+  --color-butter: #f7d774;
+  --color-sage: #a8c3a0;
+  --color-peach: #f8c8a0;
+  --font-display: var(--font-fredoka);
+  --font-sans: var(--font-nunito);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-paper);
+  /* Soft knit-dot texture. */
+  background-image: radial-gradient(circle at 1px 1px, rgb(229 139 160 / 0.12) 1px, transparent 0);
+  background-size: 18px 18px;
+  color: var(--color-ink);
+}
+
+@layer components {
+  .btn-primary {
+    @apply rounded-full border-2 border-ink bg-rose px-5 py-2 font-display text-white shadow-[0_3px_0_var(--color-ink)] transition active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-ink)];
+  }
+  .btn-soft {
+    @apply rounded-full border-2 border-ink/20 bg-white/80 px-4 py-2 font-display text-sm text-ink transition hover:border-ink/40 disabled:opacity-40;
+  }
+}
+
+.yarn-range {
+  appearance: none;
+  height: 10px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #f3d3db 0 6px, #f8e2e8 6px 10px);
+  border: 2px solid rgb(90 68 52 / 0.15);
+}
+.yarn-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-rose);
+  border: 2px solid var(--color-ink);
+  cursor: grab;
+}
+.yarn-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-rose);
+  border: 2px solid var(--color-ink);
+  cursor: grab;
+}

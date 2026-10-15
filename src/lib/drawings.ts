@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slugify } from "@/lib/catalog/admin";
+import { stemArtworks, vesselArtworks } from "@/components/artwork/registry";
 import { isStemArtworkKey, isVesselArtworkKey } from "@/lib/catalog/rows";
 
 /**
@@ -52,8 +53,7 @@ export type DrawingState = "waiting" | "drawn-not-live" | "ready" | "dismissed";
 export function drawingState(req: { status: string; kind: string; artworkKey: string | null }): DrawingState {
   if (req.status === "dismissed") return "dismissed";
   if (req.status !== "drawn" || !req.artworkKey) return "waiting";
-  const live = isVesselKind(req.kind) ? isVesselArtworkKey(req.artworkKey) : isStemArtworkKey(req.artworkKey);
-  return live ? "ready" : "drawn-not-live";
+  return isDrawingFor(req.kind, req.artworkKey) ? "ready" : "drawn-not-live";
 }
 
 /** A registry key for a new drawing: the slugified name, made unique against `taken`. */
@@ -63,3 +63,18 @@ export function suggestArtworkKey(name: string, taken: Iterable<string>): string
   if (!used.has(base)) return base;
   for (let i = 2; ; i++) if (!used.has(`${base}-${i}`)) return `${base}-${i}`;
 }
+
+/** The drawings in this build that a request of `kind` can use. */
+export function drawingChoices(kind: string): string[] {
+  return Object.keys(isVesselKind(kind) ? vesselArtworks : stemArtworks);
+}
+
+/** A drawing in this build whose key matches the request's name ("Cat" -> "cat"), if any. */
+export function matchingDrawing(name: string, kind: string): string | null {
+  const key = slugify(name);
+  return key && drawingChoices(kind).includes(key) ? key : null;
+}
+
+/** Whether `key` is a drawing a request of `kind` can be marked with. */
+export const isDrawingFor = (kind: string, key: string) =>
+  isVesselKind(kind) ? isVesselArtworkKey(key) : isStemArtworkKey(key);

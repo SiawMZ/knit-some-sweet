@@ -3,9 +3,17 @@ import { dismissDrawing } from "@/app/admin/actions";
 import { ArtworkThumb } from "@/components/artwork/ArtworkThumb";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { DrawingRequestForm } from "@/components/admin/DrawingRequestForm";
+import { MarkDrawnForm } from "@/components/admin/MarkDrawnForm";
 import { VesselThumb } from "@/components/builder/VesselPicker";
 import { isStemArtworkKey, isVesselArtworkKey } from "@/lib/catalog/rows";
-import { DRAWING_KINDS, type DrawingKind, drawingState, isVesselKind } from "@/lib/drawings";
+import {
+  DRAWING_KINDS,
+  type DrawingKind,
+  drawingChoices,
+  drawingState,
+  isVesselKind,
+  matchingDrawing,
+} from "@/lib/drawings";
 import { db } from "@/lib/server/db";
 import { requireSeller } from "@/lib/server/session";
 
@@ -88,6 +96,9 @@ export default async function DrawingRequestsPage() {
                       confirmText={`Cancel the drawing request for ${r.name}?`}
                       action={dismissDrawing.bind(null, r.id)}
                     />
+                  )}
+                  {state === "waiting" && (
+                    <MarkDrawnForm id={r.id} choices={drawingChoices(r.kind)} match={matchingDrawing(r.name, r.kind)} />
                   )}
                 </li>
               );

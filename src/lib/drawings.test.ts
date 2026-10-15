@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PHOTO_BYTES, checkPhoto, drawingRequestSchema, drawingState, suggestArtworkKey } from "./drawings";
+import {
+  MAX_PHOTO_BYTES,
+  checkPhoto,
+  drawingChoices,
+  drawingRequestSchema,
+  drawingState,
+  isDrawingFor,
+  matchingDrawing,
+  suggestArtworkKey,
+} from "./drawings";
 
 describe("drawingRequestSchema", () => {
   it("accepts a request and drops empty notes", () => {
@@ -44,6 +53,27 @@ describe("drawingState", () => {
   it("checks vessels against the vessel registry", () => {
     expect(drawingState({ status: "drawn", kind: "vase", artworkKey: "bubble-pot" })).toBe("ready");
     expect(drawingState({ status: "drawn", kind: "vase", artworkKey: "tulip" })).toBe("drawn-not-live");
+  });
+});
+
+describe("drawing choices", () => {
+  it("offers stem drawings for items and vessel drawings for vases and wraps", () => {
+    expect(drawingChoices("friend")).toContain("cat");
+    expect(drawingChoices("friend")).not.toContain("bubble-pot");
+    expect(drawingChoices("wrap")).toEqual(expect.arrayContaining(["paper-wrap", "bubble-pot"]));
+  });
+
+  it("finds a drawing that matches the request's name", () => {
+    expect(matchingDrawing("Cat", "friend")).toBe("cat");
+    expect(matchingDrawing("Classic Rose", "bloom")).toBe("classic-rose");
+    expect(matchingDrawing("Mini daisy", "bloom")).toBeNull();
+    expect(matchingDrawing("Tulip", "vase")).toBeNull();
+  });
+
+  it("only accepts drawings of the right type", () => {
+    expect(isDrawingFor("bloom", "tulip")).toBe(true);
+    expect(isDrawingFor("vase", "tulip")).toBe(false);
+    expect(isDrawingFor("bloom", "not-drawn-yet")).toBe(false);
   });
 });
 

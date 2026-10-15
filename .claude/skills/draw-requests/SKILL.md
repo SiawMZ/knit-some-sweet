@@ -24,9 +24,10 @@ npm run drawings -- export
 
 This writes `drawing-requests/requests.json` and one photo per request (the folder is
 gitignored: the photos are the seller's private data, never commit them or copy them into
-`public/` or `image_ref/`). It reads `DATABASE_URL` from `.env`; to work on the live
-shop's requests, the user must point it at the production database. If nothing is waiting,
-say so and stop.
+`public/` or `image_ref/`). It uses `LIVE_DATABASE_URL` from `.env` (the live shop on
+Neon) and falls back to `DATABASE_URL` (local Docker) when that isn't set; its first line
+says which. If it says "local" and the user means the real shop, ask them to set
+`LIVE_DATABASE_URL`. If nothing is waiting, say so and stop.
 
 Each entry has `id`, `name`, `kind` (bloom, filler, friend, vase or wrap), `notes`,
 `photo`, `registry` (`stemArtworks` or `vesselArtworks`) and a free `suggestedKey`.
@@ -86,13 +87,20 @@ Then run `npm run typecheck`, `npm run lint` and `npm test`.
 
 ## 5. Mark the requests drawn
 
+Nothing to run here by default. Once the drawing is deployed, the request on
+`/admin/requests` offers **Mark as drawn** with the matching drawing pre-selected when the
+key is the slug of the request's name (otherwise the user picks it from the list). One
+click there makes it "Ready to use" with a **Create item** button that pre-fills the item
+form. Use a key equal to `suggestedKey` so the match works.
+
+To mark it from here instead, before or after the deploy:
+
 ```bash
 npm run drawings -- done <id> <key>
 ```
 
-This refuses keys that aren't in the registry. The seller's page shows "Drawn, live after
-the next site update" until the deploy, then "Ready to use" with a **Create item** button
-that pre-fills the item form.
+This refuses keys that aren't in the registry. Until the deploy the seller's page shows
+"Drawn, live after the next site update".
 
 ## 6. Report
 

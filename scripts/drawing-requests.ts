@@ -5,8 +5,8 @@
  *   npm run drawings -- export          save waiting photos + requests.json to drawing-requests/
  *   npm run drawings -- done <id> <key> mark a request drawn with registry key <key>
  *
- * Uses DATABASE_URL from .env. Point it at the production database to work on
- * the seller's real requests.
+ * Works on the live shop's queue: LIVE_DATABASE_URL from .env (Neon), falling
+ * back to DATABASE_URL (local Docker) when it isn't set.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -17,7 +17,11 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { isVesselKind, suggestArtworkKey } from "../src/lib/drawings";
 
 const OUT_DIR = path.join(process.cwd(), "drawing-requests");
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+const connectionString = process.env.LIVE_DATABASE_URL || process.env.DATABASE_URL;
+if (!connectionString) throw new Error("Set LIVE_DATABASE_URL (or DATABASE_URL) in .env.");
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+// Say which database this is, so test requests and the seller's real ones never get mixed up.
+console.log(`Using the ${process.env.LIVE_DATABASE_URL ? "live" : "local"} database (${new URL(connectionString).hostname}).`);
 const takenKeys = [...Object.keys(stemArtworks), ...Object.keys(vesselArtworks)];
 
 const waiting = () =>

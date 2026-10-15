@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { signOut } from "@/auth";
 import { firstError, parseColorForm, parseItemForm, parseVesselForm } from "@/lib/catalog/admin";
-import { checkPhoto, drawingRequestSchema } from "@/lib/drawings";
+import { checkPhoto, drawingRequestSchema, isDrawingFor } from "@/lib/drawings";
 import { CATALOG_TAG } from "@/lib/catalog/queries";
 import { db } from "@/lib/server/db";
 import { notifyDrawingRequest } from "@/lib/server/notify";
@@ -179,6 +179,19 @@ export async function requestDrawing(_prev: FormState, fd: FormData): Promise<Fo
 export async function dismissDrawing(id: string): Promise<FormState> {
   await requireSeller();
   await db().drawingRequest.updateMany({ where: { id, status: "waiting" }, data: { status: "dismissed" } });
+  refresh();
+  return undefined;
+}
+
+/** Mark a waiting request as drawn with a drawing that's already on the deployed site. */
+export async function markDrawingDrawn(_prev: FormState, fd: FormData): Promise<FormState> {
+  await requireSeller();
+  const id = String(fd.get("id") ?? "");
+  const artworkKey = String(fd.get("artworkKey") ?? "");
+  const req = await db().drawingRequest.findUnique({ where: { id }, select: { kind: true, status: true } });
+  if (!req || req.status !== "waiting") return { error: "That request isn't waiting any more. Reload the page." };
+  if (!isDrawingFor(req.kind, artworkKey)) return { error: "Pick one of the drawings on the site." };
+  await db().drawingRequest.update({ where: { id }, data: { status: "drawn", artworkKey } });
   refresh();
   return undefined;
 }

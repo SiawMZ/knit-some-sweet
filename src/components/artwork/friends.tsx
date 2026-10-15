@@ -66,3 +66,48 @@ export function Bear({ color }: ArtProps) {
     </g>
   );
 }
+
+const MILK = "#fffaf2";
+const EAR_PINK = "#f4b3b8";
+
+/** A fluffy long-haired cat: white muzzle, paws and tail tip, tabby stripes on the forehead. */
+export function Cat({ color }: ArtProps) {
+  const stripe = shade(color, -0.28);
+  return (
+    <g transform="translate(0 -30)">
+      {/* Fluffy tail curling up behind the head. */}
+      <path d="M14 14 Q30 19 37 11 Q43 4 40 -4 Q43 -13 35 -18 Q27 -20 26 -13 Q30 0 17 5 Z" {...filled(color)} />
+      <path d="M41.5 -9 Q42 -15 35 -18 Q28 -19.5 26.5 -14 Q32 -14 36 -11 Q39 -9 41.5 -9 Z" {...filled(MILK, 1.6)} />
+      <Stitch d="M19 11 Q34 9 35 -6" color={color} />
+      {/* Ears. */}
+      <path d="M-24 -6 L-20 -30 Q-18.5 -33 -16 -31 L-4 -20 Z" {...filled(color)} />
+      <path d="M24 -6 L20 -30 Q18.5 -33 16 -31 L4 -20 Z" {...filled(color)} />
+      <path d="M-19 -12 L-18 -26 L-9 -19 Z" fill={EAR_PINK} />
+      <path d="M19 -12 L18 -26 L9 -19 Z" fill={EAR_PINK} />
+      {/* Long-hair cheek tufts. */}
+      <path d="M-22 -2 L-31 2 L-25 6 L-31 10 L-24 13 L-28 17 L-18 16 Z" {...filled(color)} />
+      <path d="M22 -2 L31 2 L25 6 L31 10 L24 13 L28 17 L18 16 Z" {...filled(color)} />
+      <ellipse cx={0} cy={0} rx={26} ry={22} {...filled(color)} />
+      <Stitch d="M-21 -9 Q0 -15 21 -9" color={color} />
+      <Stitch d="M-24 6 Q0 1 24 6" color={color} />
+      <path d="M-6 -20 L-5 -14 M0 -21 L0 -14 M6 -20 L5 -14" stroke={stripe} strokeWidth={2} strokeLinecap="round" />
+      <Face y={-4} gap={10} blush="#f6a98d" />
+      {/* White muzzle, pink nose, little mouth and whiskers. */}
+      <circle cx={-4.5} cy={8} r={5.5} {...filled(MILK, 1.4)} />
+      <circle cx={4.5} cy={8} r={5.5} {...filled(MILK, 1.4)} />
+      <path d="M-2.6 3.6 L2.6 3.6 L0 6.6 Z" fill={EAR_PINK} stroke={INK} strokeWidth={0.9} strokeLinejoin="round" />
+      <path d="M0 6.6 Q-1.8 9.6 -3.8 8.2 M0 6.6 Q1.8 9.6 3.8 8.2" fill="none" stroke={INK} strokeWidth={1.1} strokeLinecap="round" />
+      <path
+        d="M-10 7 L-20 5 M-10 9.5 L-20 10.5 M10 7 L20 5 M10 9.5 L20 10.5"
+        stroke={INK}
+        strokeWidth={0.8}
+        strokeLinecap="round"
+        opacity={0.55}
+      />
+      {/* White front paws. */}
+      <ellipse cx={-11} cy={21} rx={7} ry={5} {...filled(MILK)} />
+      <ellipse cx={11} cy={21} rx={7} ry={5} {...filled(MILK)} />
+      <Stitch d="M-11 18 L-11 22 M11 18 L11 22" color={MILK} />
+    </g>
+  );
+}

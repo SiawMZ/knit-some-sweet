@@ -16,7 +16,7 @@ import {
   Tulip,
 } from "./blooms";
 import { BerrySprig, Lavender, LeafSprig } from "./fillers";
-import { Bear, Chick, Piggy } from "./friends";
+import { Bear, Cat, Chick, Piggy } from "./friends";
 import type { ArtProps } from "./parts";
 import { STEM_GREEN } from "./parts";
 import {
@@ -59,6 +59,7 @@ export const stemArtworks = {
   piggy: { Component: Piggy, stemColor: sameHue, reach: 64 },
   chick: { Component: Chick, stemColor: sameHue, reach: 74 },
   bear: { Component: Bear, stemColor: sameHue, reach: 72 },
+  cat: { Component: Cat, stemColor: sameHue, reach: 66 },
 } satisfies Record<string, StemArtwork>;
 
 export type StemArtworkKey = keyof typeof stemArtworks;

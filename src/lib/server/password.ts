@@ -30,14 +30,16 @@ export interface SellerEnv {
   SELLER_PASSWORD_HASH?: string;
 }
 
+/** A setting pasted with its .env quotes (easy to do in a host's dashboard) still works. */
+const unquote = (value?: string) => value?.trim().replace(/^(["'])(.*)\1$/, "$2").trim();
 /** The seller account if the email and password match the env config, otherwise null. */
 export async function checkSellerCredentials(
   email: unknown,
   password: unknown,
   env: SellerEnv,
 ): Promise<{ id: string; email: string; name: string } | null> {
-  const sellerEmail = env.SELLER_EMAIL?.trim().toLowerCase();
-  const hash = env.SELLER_PASSWORD_HASH?.trim();
+  const sellerEmail = unquote(env.SELLER_EMAIL)?.toLowerCase();
+  const hash = unquote(env.SELLER_PASSWORD_HASH);
   if (!sellerEmail || !hash || typeof email !== "string" || typeof password !== "string") return null;
   // Check the password even when the email is wrong, so both take the same time.
   const passwordOk = await verifyPassword(password, hash);

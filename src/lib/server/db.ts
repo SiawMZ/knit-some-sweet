@@ -12,8 +12,10 @@ const globalForPrisma = globalThis as unknown as { prisma?: Client };
  */
 export function db(): Client {
   const cached = globalForPrisma.prisma;
-  if (cached instanceof PrismaClient) return cached;
-  // A client from before `prisma generate` re-ran (a schema change in dev) lacks new models: replace it.
+  // Production bundles can hold several copies of PrismaClient (one per server chunk), so
+  // `instanceof` fails across chunks there: always share the one client.
+  if (cached && (process.env.NODE_ENV === "production" || cached instanceof PrismaClient)) return cached;
+  // In dev, a client from before `prisma generate` re-ran (a schema change) lacks new models: replace it.
   if (cached) void (cached as Client).$disconnect();
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set. See .env.example.");

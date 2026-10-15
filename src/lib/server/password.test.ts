@@ -33,6 +33,12 @@ describe("checkSellerCredentials", () => {
     expect(await checkSellerCredentials(undefined, undefined, env)).toBeNull();
   });
 
+  it("accepts settings pasted with their .env quotes", async () => {
+    const hash = await hashPassword("yarn-yarn-yarn");
+    const env = { SELLER_EMAIL: '"shop@knit.test"', SELLER_PASSWORD_HASH: ` '${hash}' ` };
+    expect(await checkSellerCredentials("shop@knit.test", "yarn-yarn-yarn", env)).not.toBeNull();
+  });
+
   it("lets nobody in when the account isn't configured", async () => {
     expect(await checkSellerCredentials("a@b.c", "", {})).toBeNull();
     expect(await checkSellerCredentials("a@b.c", "pw", { SELLER_EMAIL: "a@b.c" })).toBeNull();

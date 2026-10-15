@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "prod-neon",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env.neon", "node_modules/next/dist/bin/next", "start", "-p", "3100"],
+      "port": 3100
     }
   ]
 }
